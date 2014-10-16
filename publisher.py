@@ -6,6 +6,7 @@ import json
 import mosquitto
 import sys
 import logging
+import os
 
 logger = logging.getLogger('publisher')
 
@@ -33,7 +34,7 @@ def process_line(line):
 
 
 def main():
-    DEVICE_ID = "1"
+    DEVICE_ID = os.environ['BASE_ID']
 
     datapacket = ""
     rc = 0
