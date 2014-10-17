@@ -17,16 +17,21 @@ class Watchdog:
         self.timeout = timeout
         self.handler = userHandler if userHandler is not None else self.defaultHandler
         self.timer = Timer(self.timeout, self.handler)
+        self.timer.start()
 
     def reset(self):
+        #print "being reset"
         self.timer.cancel()
         self.timer = Timer(self.timeout, self.handler)
+        self.timer.start()
 
     def stop(self):
         self.timer.cancel()
 
     def defaultHandler(self):
-        raise self
+        print "UHOH RESTART"
+        os.system("sudo killall hcidump");
+        sys.exit(0)
 
 def on_connect(mosq, obj, rc):
     if rc == 0:
@@ -79,6 +84,8 @@ def main():
             datapacket = datapacket + line
         except KeyboardInterrupt:
             logger.info('Program closed via keyboard')
+            sys.exit(0)
+        except Watchdog:
             sys.exit(0)
         except:
             pass
