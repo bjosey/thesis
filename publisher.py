@@ -7,8 +7,26 @@ import mosquitto
 import sys
 import logging
 import os
+from threading import Timer
 
 logger = logging.getLogger('publisher')
+
+
+class Watchdog:
+    def __init__(self, timeout, userHandler=None):  # timeout in seconds
+        self.timeout = timeout
+        self.handler = userHandler if userHandler is not None else self.defaultHandler
+        self.timer = Timer(self.timeout, self.handler)
+
+    def reset(self):
+        self.timer.cancel()
+        self.timer = Timer(self.timeout, self.handler)
+
+    def stop(self):
+        self.timer.cancel()
+
+    def defaultHandler(self):
+        raise self
 
 def on_connect(mosq, obj, rc):
     if rc == 0:
@@ -35,6 +53,8 @@ def process_line(line):
 
 def main():
     DEVICE_ID = os.environ['BASE_ID']
+    
+    watchdog = Watchdog(30)
 
     datapacket = ""
     rc = 0
@@ -55,6 +75,7 @@ def main():
             if line.startswith('>'): 
                 mqttc.publish("/beacons/base/" + DEVICE_ID, datapacket, 0)
                 datapacket = ""
+                watchdog.reset()
             datapacket = datapacket + line
         except KeyboardInterrupt:
             logger.info('Program closed via keyboard')
